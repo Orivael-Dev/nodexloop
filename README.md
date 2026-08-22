@@ -41,14 +41,14 @@ judges, and a straight-talk page on current limits.
 ## The Template Demo Book
 
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
-of every built-in template: all 23, across five groups (build · debug your
+of every built-in template: all 29, across five groups (build · debug your
 company · debug your life · enterprise · meta).
 
 Nothing in it is typed in. Each page shows the template's real graph drawn
 from its canvas coordinates, a full offline run trace, and a
 guard-OFF-vs-ON model-call comparison — all produced by an actual seeded,
-networkless run of the app. The cover carries the commands that regenerate
-the whole book.
+networkless run of the app: seeded RNG, network disabled, and no model or
+API key involved anywhere.
 
 ## Measured, honestly
 
@@ -60,7 +60,8 @@ From the integration harness (stubbed model, real app, real guard):
 | Prompt injection in the input | runs normally | **0 calls** |
 | Loop that is genuinely improving | 12 | 12 — no penalty |
 
-The demo book adds per-template numbers (drift-and-oscillation 24 → 6,
+The demo book adds per-template numbers (repo-regression bisector 27 → 9,
+drift-and-oscillation 24 → 6, context-degradation stress test 21 → 7,
 self-healing CI 14 → 8) — and reports the two templates where the guard's
 preflight false-positives on the template's own adversarial persona,
 because a measurement you only publish when it flatters you isn't a
