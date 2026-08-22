@@ -31,6 +31,13 @@ Live runs work with your own OpenAI / Anthropic / Google / OpenRouter key,
 or keyless against a local [Ollama](https://ollama.com). Sim mode needs
 nothing at all.
 
+## Read more
+
+**[NodeXLoop_Product_Overview.pdf](NodeXLoop_Product_Overview.pdf)** — the
+11-page product overview: the idea, the debugger and the governor, the
+loop library, how the RL-style loops avoid reward hacking with held-out
+judges, and a straight-talk page on current limits.
+
 ## The Template Demo Book
 
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
