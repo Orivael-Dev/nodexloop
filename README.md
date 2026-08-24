@@ -50,6 +50,20 @@ guard-OFF-vs-ON model-call comparison — all produced by an actual seeded,
 networkless run of the app: seeded RNG, network disabled, and no model or
 API key involved anywhere.
 
+## Community templates (experimental)
+
+**[templates/](templates/)** — importable graphs that don't ship inside the
+extension yet: a **legal document drafter** and a **driver update & hardening
+loop**. Import the `.loop.yaml` in the VS Code extension (`···` → *Import
+.loop.yaml*) or the `.graph.json` in the web app.
+
+Experimental, and each carries a disclaimer that travels inside the graph. In
+particular the legal drafter is **not a legal service and not legal advice** —
+its output is an unreviewed AI draft, and you should always have any legal
+document reviewed by a lawyer licensed in the relevant jurisdiction. The driver
+loop is **review-only** and never installs anything. See
+[templates/README.md](templates/README.md).
+
 ## Measured, honestly
 
 From the integration harness (stubbed model, real app, real guard):
