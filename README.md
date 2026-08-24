@@ -41,7 +41,7 @@ judges, and a straight-talk page on current limits.
 ## The Template Demo Book
 
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
-of every built-in template: all 34, across six groups (build · debug your
+of every built-in template: all 35, across six groups (build · debug your
 company · debug your life · enterprise · debug the agent · govern the agent).
 
 Nothing in it is typed in. Each page shows the template's real graph drawn
