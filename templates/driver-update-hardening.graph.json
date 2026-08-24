@@ -1,0 +1,309 @@
+{
+  "name": "Driver update & hardening loop (experimental)",
+  "nodes": [
+    {
+      "id": 1,
+      "type": "input",
+      "x": 40,
+      "y": 220,
+      "name": "Driver target",
+      "desc": "Device/adapter, installed version, OS + arch, source",
+      "color": "gray",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "",
+        "prompt": "DISCLAIMER — FOR REVIEW ONLY, NOT A VALIDATED DRIVER. This template produces a draft change for a human to review; it never installs anything. AI-generated driver code can be wrong or unsafe. Never load it onto production hardware — build and test it in isolation and have a qualified engineer review and sign off before any install.\n\nDescribe the driver: the device or adapter it serves, the installed version and build date, the OS and architecture, and where its source lives (repo, vendor package). Attach the current driver source or the module info output if you have it.",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "reader",
+      "x": 250,
+      "y": 110,
+      "name": "Version inspector",
+      "desc": "What is installed, and what it exposes",
+      "color": "orange",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Report what is installed: the exact driver version and build date, and the capabilities or device IDs it binds. Read only from what was provided. Do not judge whether it is out of date and do not propose a fix — that is later, and doing it here hides the comparison the next stage depends on. Where a fact is missing, say it is missing rather than assuming a default.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "research",
+      "x": 250,
+      "y": 340,
+      "name": "Upstream + advisory scan",
+      "desc": "Latest version and CVEs against the installed one",
+      "color": "blue",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Find the latest released version of this driver and any security advisories affecting the installed one. For each advisory record its identifier, the affected version range, the severity, and the version that fixes it. Never invent a CVE identifier or a version number; if you are not certain an advisory exists, say so rather than naming one. Distinguish an advisory that names this driver from one you are inferring applies.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "merge",
+      "x": 470,
+      "y": 220,
+      "name": "Staleness diff",
+      "desc": "Installed against upstream, in one place",
+      "color": "white",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "gate",
+      "x": 680,
+      "y": 220,
+      "name": "Out of date or vulnerable?",
+      "desc": "Current and clean short-circuits; otherwise the loop runs",
+      "color": "white",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "coder",
+      "x": 900,
+      "y": 100,
+      "name": "Driver author",
+      "desc": "Smallest change to reach the target version / fix the CVE",
+      "color": "green",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Write the smallest change that brings the driver to the target version or remediates the named advisory, against the device or API contract as documented. Produce a complete diff, and state in one line what now behaves differently. Never silence a build error by disabling the feature that failed, and never widen a permission or an unsafe cast to make something compile — that is the class of change the reviewers exist to reject.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 7,
+      "type": "coder",
+      "x": 900,
+      "y": 340,
+      "name": "Sandbox build + load test",
+      "desc": "Compiles and loads in isolation; before and after",
+      "color": "green",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Build the patched driver and load it in isolation — never against production hardware. Report the failing behaviour before the change and the same check after it: a fix with no before-and-after is not evidence. Report any capability that regressed or any test that newly fails, however unrelated it looks. If it cannot be built or loaded safely in a sandbox, say so and stop rather than guessing.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "critic",
+      "x": 1120,
+      "y": 100,
+      "name": "Correctness reviewer",
+      "desc": "Does the driver still do its job?",
+      "color": "red",
+      "config": {
+        "maxIterations": 5,
+        "threshold": 0.88,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Review the patch against the device contract and the sandbox evidence. Reject a change that compiles but alters device behaviour, drops a capability, or only silences the symptom. Check the diff is minimal and that the before/after actually supports it. Say specifically what is wrong and what would fix it; score the patch on whether it reaches the target version without regressing the device.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 9,
+      "type": "critic",
+      "x": 1120,
+      "y": 340,
+      "name": "Vulnerability scanner",
+      "desc": "Assumes the driver is unsafe until shown otherwise",
+      "color": "red",
+      "config": {
+        "maxIterations": 4,
+        "threshold": 0.92,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "Treat the driver as unsafe until the diff shows otherwise. Look for the failure modes that matter in driver code: unchecked buffer sizes and integer overflow, unvalidated input from userspace or the device, unsafe privilege or IOCTL handling, memory not freed on the error path, and any dependency the patch pulls in that is itself unpinned or advisory-affected. Confirm the original CVE is actually closed, not merely moved. For each finding quote the line, name the weakness, and give the fix. If it is genuinely clean, say so — do not manufacture findings.",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "gate",
+      "x": 1340,
+      "y": 220,
+      "name": "Install sign-off",
+      "desc": "A named human approves before anything installs",
+      "color": "white",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.95,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    },
+    {
+      "id": 11,
+      "type": "output",
+      "x": 1560,
+      "y": 220,
+      "name": "Signed driver + build & vuln report",
+      "desc": "The diff, the before/after, the advisory status, the verdict",
+      "color": "green",
+      "config": {
+        "maxIterations": 3,
+        "threshold": 0.85,
+        "autoTerminate": true,
+        "passContext": true,
+        "temperature": 0.7,
+        "systemPrompt": "",
+        "prompt": "",
+        "format": "markdown",
+        "attachments": []
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": 1,
+      "to": 2,
+      "type": "normal"
+    },
+    {
+      "from": 1,
+      "to": 3,
+      "type": "normal"
+    },
+    {
+      "from": 2,
+      "to": 4,
+      "type": "normal"
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "type": "normal"
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "type": "normal"
+    },
+    {
+      "from": 5,
+      "to": 11,
+      "type": "normal",
+      "label": "already current & clean"
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "type": "normal",
+      "label": "out of date / vulnerable"
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "type": "normal"
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "type": "normal"
+    },
+    {
+      "from": 8,
+      "to": 6,
+      "type": "loop",
+      "label": "revise"
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "type": "normal"
+    },
+    {
+      "from": 9,
+      "to": 6,
+      "type": "loop",
+      "label": "patch vulnerability"
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "type": "normal"
+    },
+    {
+      "from": 10,
+      "to": 6,
+      "type": "loop",
+      "label": "rework"
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "type": "normal",
+      "label": "approved"
+    }
+  ],
+  "nextNodeId": 12
+}
