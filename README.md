@@ -41,8 +41,8 @@ judges, and a straight-talk page on current limits.
 ## The Template Demo Book
 
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
-of every built-in template: all 29, across five groups (build · debug your
-company · debug your life · enterprise · meta).
+of every built-in template: all 34, across six groups (build · debug your
+company · debug your life · enterprise · debug the agent · govern the agent).
 
 Nothing in it is typed in. Each page shows the template's real graph drawn
 from its canvas coordinates, a full offline run trace, and a
@@ -62,10 +62,11 @@ From the integration harness (stubbed model, real app, real guard):
 
 The demo book adds per-template numbers (repo-regression bisector 27 → 9,
 drift-and-oscillation 24 → 6, context-degradation stress test 21 → 7,
-self-healing CI 14 → 8) — and reports the two templates where the guard's
-preflight false-positives on the template's own adversarial persona,
-because a measurement you only publish when it flatters you isn't a
-measurement.
+self-healing CI 14 → 8) — and shows the exemption that stops a template's
+own sanctioned adversarial critic ('devil's advocate', 'risk judge') from
+tripping the guard's HARM preflight, while a real attack and the data
+flowing through the node still block. A measurement you only publish when
+it flatters you isn't a measurement.
 
 ## Experimental builds
 
