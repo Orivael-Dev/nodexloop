@@ -18,6 +18,30 @@ banks are generated from the same engine behind Orivael's intent firewall
 and verified against it by a parity corpus. When a critic loop stalls, the
 loop governor stops it instead of letting it burn model calls.
 
+## New in 3.6.0
+
+**Organizations.** Submit a graph, have a person read it, and only then can
+anyone load it — `submit → sandbox → approved → released`, with every
+transition recording who made it. Most first agent loops are bad ones, and the
+fix that scales is a colleague's graph with the parts that make it work still
+attached.
+
+> **Local preview.** Org data lives in your browser: no server, no account, and
+> an invite code resolves for you and not for a colleague on another machine.
+> The review pipeline and the stats are real; the cross-device sharing is not
+> yet. The app says so on the sign-in card, in the signed-in view, and when a
+> code is refused.
+
+**Save-this-loop suggestion.** Run the same loop shape three times and it
+offers to save it as a template, or submit it to your org. The signature is the
+node types and edge count, not the prompts — so it matches a pattern you are
+reusing even when every prompt differs.
+
+**A Help tab.** Three steps to a first run, plus the things that are not
+obvious from the canvas: Sim mode spends nothing *and never invokes the guard*,
+the guard classifies before the call so a blocked node costs zero tokens, and
+F9 is the breakpoint key because it is the one your editor already uses.
+
 ## Install
 
 | Channel | How |
@@ -41,8 +65,10 @@ judges, and a straight-talk page on current limits.
 ## The Template Demo Book
 
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
-of every built-in template: all 35, across six groups (build · debug your
-company · debug your life · enterprise · debug the agent · govern the agent).
+of every built-in template: all 35 at the time it was generated, across six
+groups (build · debug your company · debug your life · enterprise · debug the
+agent · govern the agent). 3.6.0 ships **37** — the two community templates
+above were promoted after the book was last regenerated.
 
 Nothing in it is typed in. Each page shows the template's real graph drawn
 from its canvas coordinates, a full offline run trace, and a
@@ -52,10 +78,14 @@ API key involved anywhere.
 
 ## Community templates (experimental)
 
-**[templates/](templates/)** — importable graphs that don't ship inside the
-extension yet: a **legal document drafter** and a **driver update & hardening
-loop**. Import the `.loop.yaml` in the VS Code extension (`···` → *Import
-.loop.yaml*) or the `.graph.json` in the web app.
+**[templates/](templates/)** — a **legal document drafter** and a **driver
+update & hardening loop**.
+
+**Both now ship inside the extension** as of 3.6.0, still marked experimental,
+which also means they go through the built-in template suite they had never
+been held to. The copies here stay importable for anyone on an older build:
+`.loop.yaml` in the VS Code extension (`···` → *Import .loop.yaml*) or
+`.graph.json` in the web app.
 
 Experimental, and each carries a disclaimer that travels inside the graph. In
 particular the legal drafter is **not a legal service and not legal advice** —

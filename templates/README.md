@@ -1,9 +1,14 @@
 # Community templates (experimental)
 
-Graphs you can **import** into NodeXLoop but that don't ship inside the
-extension yet. Experimental means the shape is real and runnable, but it hasn't
-been through the built-in template suite or a release — treat each one as a
-starting point to adapt, not a finished product.
+Graphs you can **import** into NodeXLoop. Both of these were promoted into the
+extension in **3.6.0** and now ship built in, still marked experimental — which
+also means they now go through the built-in template suite they had not been
+held to when this page was written. The copies here stay importable for anyone
+on an older build.
+
+Experimental means the shape is real and runnable and the disclaimers below
+still apply in full — treat each one as a starting point to adapt, not a
+finished product.
 
 > ## ⚠️ Disclaimer — read this first
 >
