@@ -18,29 +18,88 @@ banks are generated from the same engine behind Orivael's intent firewall
 and verified against it by a parity corpus. When a critic loop stalls, the
 loop governor stops it instead of letting it burn model calls.
 
-## New in 3.6.0
+## Features
 
-**Organizations.** Submit a graph, have a person read it, and only then can
-anyone load it — `submit → sandbox → approved → released`, with every
-transition recording who made it. Most first agent loops are bad ones, and the
-fix that scales is a colleague's graph with the parts that make it work still
-attached.
+### The canvas and the debugger
+- **Visual agent-loop canvas** — agent → tool → critic → retry → gate → code
+  change → test → approve, with ten node types, drag-and-drop wiring, undo,
+  and graph import/export.
+- **Breakpoints and stepping** — F9 on a node, execution pauses *before* it
+  runs so you can read exactly what it was about to send; step, continue,
+  stop from the debug bar.
+- **Run replay and history** — every run is kept node-by-node and can be
+  replayed; live runs stream into the Runs tab as they execute.
+- **Sim mode** — whole loops run offline with synthetic outputs: no key, no
+  account, zero model calls. Good for learning the shape before spending.
 
-> **Local preview.** Org data lives in your browser: no server, no account, and
-> an invite code resolves for you and not for a colleague on another machine.
-> The review pipeline and the stats are real; the cross-device sharing is not
-> yet. The app says so on the sign-in card, in the signed-in view, and when a
-> code is refused.
+### Governed execution
+- **Axiom guard, on by default** — every prompt and completion is classified
+  in-process *before* it moves; a blocked node costs zero tokens and halts
+  only its own branch. Pattern banks are generated from Orivael's intent
+  firewall and held to a parity corpus against it. No network needed.
+- **Loop governor** — a critic loop that stops improving is cut early instead
+  of burning its remaining iterations; a loop still improving is untouched.
+- **Prompt-injection preflight** with a persona exemption, so a template's
+  own sanctioned adversarial critic doesn't trip the guard while a real
+  attack still blocks.
+- **Per-node runtime permissions** — recorded and audited on every run
+  (enforcement is on the roadmap and the README says so rather than implying
+  more).
 
-**Save-this-loop suggestion.** Run the same loop shape three times and it
-offers to save it as a template, or submit it to your org. The signature is the
-node types and edge count, not the prompts — so it matches a pattern you are
-reusing even when every prompt differs.
+### Module Resolver — governed capability loading *(3.7)*
+- **"This loop needs pygame"** becomes a governed workflow: resolve on PyPI,
+  a deterministic seven-check policy gate (typosquat distance, registry
+  allowlist, pinned version, registry sha256, install-script warning,
+  license), an isolated per-project or ephemeral environment, and a locally
+  sealed receipt of the whole decision. No model anywhere in the path.
+- **Version-correct API context** — the *installed* version's symbols,
+  signatures and docstring heads are indexed so coding nodes stop guessing
+  which APIs exist.
+- **Module node on the canvas** *(3.7.1)* — drag it from the Capabilities
+  palette, name a package, Resolve & install runs the governed flow, and at
+  run time the node injects the API context downstream for zero tokens.
 
-**A Help tab.** Three steps to a first run, plus the things that are not
-obvious from the canvas: Sim mode spends nothing *and never invokes the guard*,
-the guard classifies before the call so a blocked node costs zero tokens, and
-F9 is the breakpoint key because it is the one your editor already uses.
+### Models
+- **Model registry** — OpenAI, Anthropic, Google, OpenRouter, a local
+  Ollama, or any OpenAI-compatible endpoint; per-node model choice,
+  favourites, and a default. API keys live in the OS keychain in the
+  extension.
+- **Duplicate as custom** — point a built-in model at another endpoint (NIM,
+  vLLM, a gateway) without losing its defaults. *(Fixed in 3.7.1 — the
+  button silently did nothing since the built-in identity lock landed.)*
+- **Cost estimates labelled as estimates** — with unpriced calls counted,
+  never papered over.
+
+### The editor edition (VS Code)
+- **The graph is a file** — bidirectional sync with a `.loop.yaml` next to
+  your code: edit the canvas or the file, either stays true, and the loop
+  reviews in the same pull request as the code it drives.
+- **CodeLens on bound functions** and a stale-binding warning in the
+  Problems panel the moment a refactor breaks a binding.
+- **PDF-aware attachments** — uploaded decks and documents have their text
+  extracted so a run executes on content, not metadata.
+
+### Templates and organizations
+- **37 built-in templates** across six groups — build, debug your company,
+  debug your life, enterprise, debug the agent, govern the agent — three
+  starred by default for a first run.
+- **Repeat-shape suggestion** — run the same loop shape three times and
+  NodeXLoop offers to save it as a template or submit it to your org.
+- **Organizations (local preview)** — submit → sandbox → approved →
+  released, every transition attributed to a person; org template stats.
+  Stored in your browser: the review pipeline is real, cross-device sharing
+  is not yet, and the app says so wherever it matters.
+
+### Evidence
+- **Audit report export per run** — provenance, cost, every governance
+  decision, and the full log in one print-ready document; estimated figures
+  are labelled as estimates.
+- **Locally sealed run manifests** — tamper-evident on your machine, and
+  claiming nothing more than that.
+- **Fleet governance sandbox** — a 1–12 robot dispatch/charging sandbox for
+  exercising authority gates against a moving system.
+- **A Get-started tab** — three steps to a first run and the handful of
+  things the canvas doesn't make obvious.
 
 ## Install
 
