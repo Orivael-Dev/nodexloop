@@ -79,16 +79,58 @@ loop governor stops it instead of letting it burn model calls.
 - **PDF-aware attachments** — uploaded decks and documents have their text
   extracted so a run executes on content, not metadata.
 
-### Templates and organizations
+### Templates
 - **37 built-in templates** across six groups — build, debug your company,
   debug your life, enterprise, debug the agent, govern the agent — three
   starred by default for a first run.
 - **Repeat-shape suggestion** — run the same loop shape three times and
   NodeXLoop offers to save it as a template or submit it to your org.
-- **Organizations (local preview)** — submit → sandbox → approved →
-  released, every transition attributed to a person; org template stats.
-  Stored in your browser: the review pipeline is real, cross-device sharing
-  is not yet, and the app says so wherever it matters.
+
+### Organizations *(3.8)*
+A loop that already works is worth more than documentation, so the unit of
+sharing is a whole reviewed graph — and the point is that somebody read it.
+
+- **Real accounts.** A username and a password, not a typed display name.
+  The display name is what approvals and forks are attributed to; it is
+  deliberately not the credential. Disabling an account invalidates the
+  session it is already holding, not just the next one.
+- **Employee enrollment keys.** An admin mints one per person — labelled,
+  use-capped, expiring, revocable, and attributed to whoever redeems it. A
+  new organization joins by key only. Keys and admin codes are stored
+  hashed and shown exactly once.
+- **Everything above is in the Orgs tab**, and there is a terminal admin
+  console (`nxl-admin`) for the same calls — mint, list and revoke keys,
+  manage accounts, rotate the admin code — which is the better tool when
+  the batch is twenty people rather than one. It ships to org admins and is
+  not published on this repo yet; open an issue if you want it sooner.
+- **Review pipeline with separation of duties** *(3.8.3)* — submit →
+  sandbox → approved → released, every transition attributed. The submitter
+  **cannot approve or release their own graph**; a different account must,
+  keyed on the unique username rather than the display name. Nothing
+  becomes loadable without a named human on it.
+- **Device-only mode is still there**, with no account and no server, for
+  solo or offline work — and the app says which mode you are in wherever it
+  matters.
+
+### Flow — fork a loop, watch the team *(3.8)*
+The part of git worth copying, for loops.
+
+- **Fork without touching the original.** Copy-on-write branches off a
+  teammate's graph; the parent is never written to, which is the whole
+  guarantee.
+- **One attributed activity log per project**, rendered as chat — a colour
+  per person, an icon per action, click a row to expand its detail. Forks,
+  edits, runs and submissions all land in the same stream, and runs
+  auto-log with the governor's savings.
+- **Visibility is enforced server-side**, not by the view: you see a
+  project only if you are attached to it.
+- **Live collaboration rooms** — share a graph as a room link and edit it
+  together, with graph sync, presence and peer cursors. A room link is the
+  whole capability, Drive-share style. (Browser app; the extension points
+  you there, because its webview blocks the outbound socket.)
+
+Model API keys never leave your machine on any of these paths — the graph
+that gets shared is key-free, and the server refuses a payload carrying one.
 
 ### Evidence
 - **Audit report export per run** — provenance, cost, every governance
@@ -109,6 +151,7 @@ loop governor stops it instead of letting it burn model calls.
 | **Open VSX** (VSCodium, Cursor, Gitpod) | [orivael/loop-graph-engineer](https://open-vsx.org/extension/orivael/loop-graph-engineer) |
 | **Direct `.vsix`** | [Releases](https://github.com/Orivael-Dev/nodexloop/releases/latest) — then VS Code → Extensions → `···` → *Install from VSIX*. Each release lists its SHA-256. |
 | **Browser, no install** | [nodexloop.orivael.dev](https://nodexloop.orivael.dev) — sim mode runs whole loops offline, no account, no API key |
+| **Browser + a real IDE** *(experimental)* | [ide.orivael.dev](https://ide.orivael.dev) — editor, terminal, Python and git alongside the canvas. Access by request; see [Experimental builds](#experimental-builds). |
 
 Live runs work with your own OpenAI / Anthropic / Google / OpenRouter key,
 or keyless against a local [Ollama](https://ollama.com). Sim mode needs
@@ -177,6 +220,25 @@ Pre-release `.vsix` builds land here as GitHub
 [**pre-releases**](https://github.com/Orivael-Dev/nodexloop/releases).
 Expect rough edges; the stable channel is the Marketplace / Open VSX
 listing, which updates automatically.
+
+### NodeXLoop with an IDE — [ide.orivael.dev](https://ide.orivael.dev) *(experimental)*
+
+The whole product in a browser tab: the canvas and the guard alongside a
+real editor, a real terminal, and Python, pip and git — so a Module
+Resolver install actually installs, and a Run node actually runs. It is a
+distribution of [openvscode-server](https://github.com/gitpod-io/openvscode-server)
+(Code-OSS, MIT) with the extension baked in; no Microsoft marketplace or
+branding is involved.
+
+**Access is by request** — the link is behind HTTP basic auth and will
+return 401 without credentials. It is an early build we are testing with a
+small number of people rather than an open service, and saying so is more
+useful than a login page that pretends otherwise. Open an issue if you want
+in.
+
+Not the same thing as [nodexloop.orivael.dev](https://nodexloop.orivael.dev),
+which is the app alone — open, no account, no sign-in, and no terminal
+behind it.
 
 ## Privacy
 
