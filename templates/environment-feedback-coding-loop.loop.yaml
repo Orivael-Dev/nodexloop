@@ -1,0 +1,140 @@
+# NodeXLoop graph manifest — environment feedback coding task.
+# Attach repository context and acceptance-test output before each run.
+apiVersion: nodexloop/v1
+kind: LoopGraph
+metadata:
+  name: Environment-feedback coding task (experimental)
+spec:
+  nodes:
+    - id: 1
+      type: input
+      name: Task + acceptance criteria
+      description: A real issue with a checkable success condition
+      color: gray
+      position: { x: 40, y: 220 }
+      config:
+        temperature: 0.2
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        prompt: |-
+          Provide a real coding task, not a toy prompt. Include:
+          - repository and relevant branch/commit
+          - observed behavior and expected behavior
+          - acceptance criteria that can be checked
+          - allowed commands and files that must not change
+          - test command and its unmodified baseline output
+
+          Run commands only in a disposable local or sandbox environment. Do not include secrets, customer data, or production credentials. The final result must distinguish observed test evidence from assumptions.
+    - id: 2
+      type: reader
+      name: Repository map
+      description: Identify code path, contracts, and relevant tests
+      color: orange
+      position: { x: 260, y: 100 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Read the supplied repository files and task. Map the likely execution path, public contracts, nearby tests, and constraints. Cite file paths and symbols from the supplied material. Do not propose edits yet. Separate confirmed facts from gaps. If the supplied context is insufficient to locate the behavior, list the exact files or command output needed.
+    - id: 3
+      type: reader
+      name: Baseline test evidence
+      description: Preserve the before-change result for comparison
+      color: orange
+      position: { x: 260, y: 340 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Inspect the attached baseline test output and acceptance criteria. Record the exact command, exit status, failing and passing checks, and any environment details shown. Never infer a passing test from missing output. Mark unavailable evidence as NOT RUN.
+    - id: 4
+      type: merge
+      name: Task evidence bundle
+      description: One grounded brief for the patch author
+      color: white
+      position: { x: 480, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+    - id: 5
+      type: coder
+      name: Minimal patch
+      description: Make the smallest change that meets acceptance criteria
+      color: green
+      position: { x: 700, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Propose the smallest patch that satisfies the stated acceptance criteria while preserving existing contracts. Return a unified diff and a short rationale. Do not claim that code was edited or tests were run unless the environment produced that evidence. Do not modify unrelated files, weaken assertions, delete failing tests, or suppress errors to obtain a pass.
+    - id: 6
+      type: critic
+      name: Run-result reviewer
+      description: Compare the patch with fresh test output
+      color: red
+      position: { x: 940, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 4
+        threshold: 0.92
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Review the proposed diff together with the newly attached test output. Require the exact test command and exit status. Compare before and after results; identify regressions, missing acceptance checks, flaky or skipped tests, and any mismatch between the task and patch. Score 0.00–1.00. If tests were not run, say NOT VERIFIED and do not approve. If the patch needs work, state the smallest concrete correction.
+    - id: 7
+      type: gate
+      name: Human review
+      description: A person checks the diff and evidence before acceptance
+      color: white
+      position: { x: 1180, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.95
+        autoTerminate: true
+        passContext: true
+        format: markdown
+    - id: 8
+      type: output
+      name: Verified task record
+      description: Patch, before/after evidence, and remaining gaps
+      color: green
+      position: { x: 1400, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.9
+        autoTerminate: true
+        passContext: true
+        format: markdown
+  edges:
+    - { from: 1, to: 2, type: normal }
+    - { from: 1, to: 3, type: normal }
+    - { from: 2, to: 4, type: normal }
+    - { from: 3, to: 4, type: normal }
+    - { from: 4, to: 5, type: normal }
+    - { from: 5, to: 6, type: normal }
+    - { from: 6, to: 5, type: loop, label: revise from observed failures }
+    - { from: 6, to: 7, type: normal, label: meets criteria with evidence }
+    - { from: 7, to: 5, type: loop, label: human requests revision }
+    - { from: 7, to: 8, type: normal, label: approved }
