@@ -94,8 +94,8 @@ Driver target ─┬─► Version inspector ──┐
                                             already current & clean │            │ out of date / vulnerable
                                                                     ▼            ▼
                                                                  (output) ◄── Driver author ◄────┐
-                                                                    ▲            │
-                                                        approved    │           ▼               │
+                                                                    ▲            │               │
+                                                        approved    │           ▼               │ revise / patch / rework
                                                           Install sign-off ◄─ Vuln scanner ◄─ Correctness reviewer
 ```
 
@@ -112,26 +112,6 @@ Turn the Axiom guard on and its loop governor will stop the author/critic cycle
 if the diffs stop changing. For a real vulnerability backend rather than an LLM
 critic, the scanner node is where the `axiom_shield` / `axiom_cas` MCP tools
 would wire in.
-
-## Environment-feedback coding task
-
-`environment-feedback-coding-loop.loop.yaml`
-
-A reusable real-issue loop that records the repository context, baseline
-failures, smallest patch, fresh test output, and a human review. Test output
-must be supplied from the local or sandboxed IDE environment; the graph labels
-missing evidence `NOT VERIFIED` instead of treating a model response as a test.
-
-## CAS policy-boundary coding exercise
-
-`cas-policy-boundary-coding-exercise.loop.yaml`
-
-A policy-boundary exercise built around sanitized allow/deny/approval cases.
-The graph reviews raw CAS harness output when supplied, checks near-neighbor
-cases for accidental over-permission, and routes changes through human
-approval. It does **not** invoke `axiom_cas` by itself; connect/run the CAS
-harness separately and attach its output as evidence.
-
 
 ## Environment-feedback coding task
 
