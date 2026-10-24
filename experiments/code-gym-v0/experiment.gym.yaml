@@ -1,0 +1,33 @@
+# Companion manifest. NodeXLoop's existing importer does NOT execute this file.
+apiVersion: nodexloop.training/v1alpha1
+kind: GymExperiment
+metadata:
+  name: nim-vs-local-short-code-v0
+  purpose: "Find repair/reasoning gaps, not claim model weight updates"
+experiment:
+  repetitions: 3
+  max_repairs: 2
+  conditions:
+    - small_direct
+    - large_direct
+    - small_gym
+    - small_teacher
+models:
+  small:
+    base_url_env: SMALL_BASE_URL
+    api_key_env: SMALL_API_KEY
+    model_env: SMALL_MODEL
+  large:
+    base_url_env: LARGE_BASE_URL
+    api_key_env: LARGE_API_KEY
+    model_env: LARGE_MODEL
+sandbox:
+  image: python:3.12-alpine
+  timeout_seconds: 12
+scoring:
+  visible: "Used for repair feedback only"
+  hidden: "Used for final score, never disclosed to either model"
+  success: "All held-out cases pass; first-pass and final-pass reported"
+governance:
+  isolation: "Docker; no network; read-only root; no added capabilities"
+  axiom_integration: "planned, not implemented in this experiment"
