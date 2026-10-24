@@ -1,0 +1,712 @@
+[
+  {
+    "id": "appointments",
+    "prompt": "Implement is_available(bookings, start, end). Return False for invalid intervals (start >= end). Ignore bookings whose status is 'cancelled'; missing status means active. Treat intervals as [start,end), so touching boundaries do NOT overlap. Return True only if there is no active overlap.",
+    "entrypoint": "is_available",
+    "starter": "def is_available(bookings, start, end):\n    for booking in bookings:\n        if start <= booking[\"end\"] and end >= booking[\"start\"]:\n            return False\n    return True\n",
+    "visible": [
+      {
+        "args": [
+          [
+            {
+              "start": 10,
+              "end": 12
+            }
+          ],
+          12,
+          13
+        ],
+        "expected": true
+      },
+      {
+        "args": [
+          [
+            {
+              "start": 10,
+              "end": 12
+            }
+          ],
+          11,
+          13
+        ],
+        "expected": false
+      },
+      {
+        "args": [
+          [],
+          6,
+          6
+        ],
+        "expected": false
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            {
+              "start": 10,
+              "end": 12,
+              "status": "cancelled"
+            }
+          ],
+          11,
+          13
+        ],
+        "expected": true
+      },
+      {
+        "args": [
+          [
+            {
+              "start": 10,
+              "end": 12
+            }
+          ],
+          9,
+          10
+        ],
+        "expected": true
+      },
+      {
+        "args": [
+          [
+            {
+              "start": 10,
+              "end": 12,
+              "status": "active"
+            }
+          ],
+          10,
+          11
+        ],
+        "expected": false
+      },
+      {
+        "args": [
+          [],
+          3,
+          5
+        ],
+        "expected": true
+      }
+    ]
+  },
+  {
+    "id": "dedupe-ids",
+    "prompt": "Implement unique_ids(events). Return first-seen non-None 'id' values preserving order. Skip events lacking an id or with id=None. Treat integer 1 and string '1' as distinct IDs.",
+    "entrypoint": "unique_ids",
+    "starter": "def unique_ids(events):\n    return list(set(e[\"id\"] for e in events))\n",
+    "visible": [
+      {
+        "args": [
+          [
+            {
+              "id": "a"
+            },
+            {
+              "id": "b"
+            },
+            {
+              "id": "a"
+            }
+          ]
+        ],
+        "expected": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "args": [
+          [
+            {
+              "id": 1
+            },
+            {},
+            {
+              "id": null
+            },
+            {
+              "id": 2
+            }
+          ]
+        ],
+        "expected": [
+          1,
+          2
+        ]
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            {
+              "id": 1
+            },
+            {
+              "id": "1"
+            },
+            {
+              "id": 1
+            }
+          ]
+        ],
+        "expected": [
+          1,
+          "1"
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expected": []
+      },
+      {
+        "args": [
+          [
+            {
+              "id": 0
+            },
+            {
+              "id": false
+            },
+            {
+              "id": 0
+            }
+          ]
+        ],
+        "expected": [
+          0,
+          false
+        ]
+      }
+    ]
+  },
+  {
+    "id": "chunking",
+    "prompt": "Implement chunk_items(items, size). Return consecutive chunks of length <= size, preserving order. For size <= 0 return an empty list. Inputs are ordinary JSON-compatible lists.",
+    "entrypoint": "chunk_items",
+    "starter": "def chunk_items(items, size):\n    return [items[i:i+size] for i in range(0, len(items), size)]\n",
+    "visible": [
+      {
+        "args": [
+          [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          2
+        ],
+        "expected": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ],
+          [
+            5
+          ]
+        ]
+      },
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          0
+        ],
+        "expected": []
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            1,
+            2
+          ],
+          -3
+        ],
+        "expected": []
+      },
+      {
+        "args": [
+          [],
+          4
+        ],
+        "expected": []
+      },
+      {
+        "args": [
+          [
+            1,
+            2,
+            3
+          ],
+          8
+        ],
+        "expected": [
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "id": "stock-reorder",
+    "prompt": "Implement reorder_quantity(stock, reserved, target). Reject negative inputs with None. Usable stock is max(0, stock-reserved). Return the minimum nonnegative integer quantity needed to reach target available stock.",
+    "entrypoint": "reorder_quantity",
+    "starter": "def reorder_quantity(stock, reserved, target):\n    return max(0, target-stock)\n",
+    "visible": [
+      {
+        "args": [
+          10,
+          4,
+          8
+        ],
+        "expected": 2
+      },
+      {
+        "args": [
+          2,
+          5,
+          6
+        ],
+        "expected": 6
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          10,
+          0,
+          8
+        ],
+        "expected": 0
+      },
+      {
+        "args": [
+          -1,
+          0,
+          3
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          5,
+          1,
+          5
+        ],
+        "expected": 1
+      },
+      {
+        "args": [
+          0,
+          0,
+          0
+        ],
+        "expected": 0
+      }
+    ]
+  },
+  {
+    "id": "slugify",
+    "prompt": "Implement slugify(title). Keep lowercase ASCII a-z and digits 0-9; convert any contiguous run of other characters to one '-'; strip leading/trailing hyphens. Empty input returns empty string. Do not use third-party packages.",
+    "entrypoint": "slugify",
+    "starter": "def slugify(title):\n    return title.lower().replace(\" \", \"-\")\n",
+    "visible": [
+      {
+        "args": [
+          "  Hello, World! "
+        ],
+        "expected": "hello-world"
+      },
+      {
+        "args": [
+          "A__B   C"
+        ],
+        "expected": "a-b-c"
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          "Version 2.0"
+        ],
+        "expected": "version-2-0"
+      },
+      {
+        "args": [
+          "***"
+        ],
+        "expected": ""
+      },
+      {
+        "args": [
+          "a---b"
+        ],
+        "expected": "a-b"
+      },
+      {
+        "args": [
+          ""
+        ],
+        "expected": ""
+      }
+    ]
+  },
+  {
+    "id": "merge-windows",
+    "prompt": "Implement merge_windows(windows). Input is a list of [start,end] integer pairs. Drop invalid ranges start >= end, sort by start, then merge overlapping OR touching windows. Return a list of [start,end] pairs.",
+    "entrypoint": "merge_windows",
+    "starter": "def merge_windows(windows):\n    return sorted(windows)\n",
+    "visible": [
+      {
+        "args": [
+          [
+            [
+              5,
+              7
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              3,
+              5
+            ]
+          ]
+        ],
+        "expected": [
+          [
+            1,
+            7
+          ]
+        ]
+      },
+      {
+        "args": [
+          [
+            [
+              1,
+              2
+            ],
+            [
+              4,
+              5
+            ]
+          ]
+        ],
+        "expected": [
+          [
+            1,
+            2
+          ],
+          [
+            4,
+            5
+          ]
+        ]
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            [
+              2,
+              2
+            ],
+            [
+              6,
+              3
+            ],
+            [
+              8,
+              10
+            ]
+          ]
+        ],
+        "expected": [
+          [
+            8,
+            10
+          ]
+        ]
+      },
+      {
+        "args": [
+          [
+            [
+              1,
+              10
+            ],
+            [
+              2,
+              4
+            ],
+            [
+              11,
+              12
+            ]
+          ]
+        ],
+        "expected": [
+          [
+            1,
+            10
+          ],
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "args": [
+          []
+        ],
+        "expected": []
+      }
+    ]
+  },
+  {
+    "id": "word-count",
+    "prompt": "Implement count_words(text). Count case-insensitive contiguous ASCII letters and digits ([a-z0-9]+) as words. Punctuation, hyphens and whitespace separate words. Return a dict of word -> integer count.",
+    "entrypoint": "count_words",
+    "starter": "def count_words(text):\n    return {word: text.split().count(word) for word in text.split()}\n",
+    "visible": [
+      {
+        "args": [
+          "Hi, hi! HI"
+        ],
+        "expected": {
+          "hi": 3
+        }
+      },
+      {
+        "args": [
+          "a-b a"
+        ],
+        "expected": {
+          "a": 2,
+          "b": 1
+        }
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          "Version2 version2"
+        ],
+        "expected": {
+          "version2": 2
+        }
+      },
+      {
+        "args": [
+          "   "
+        ],
+        "expected": {}
+      },
+      {
+        "args": [
+          "A_B"
+        ],
+        "expected": {
+          "a": 1,
+          "b": 1
+        }
+      }
+    ]
+  },
+  {
+    "id": "phone-normalizer",
+    "prompt": "Implement normalize_phone(value). Extract digits. If exactly 10 digits remain, return that digit string. If exactly 11 digits remain and the first is 1, remove the leading 1. Otherwise return None.",
+    "entrypoint": "normalize_phone",
+    "starter": "def normalize_phone(value):\n    return ''.join(ch for ch in value if ch.isdigit())\n",
+    "visible": [
+      {
+        "args": [
+          "(937) 555-0100"
+        ],
+        "expected": "9375550100"
+      },
+      {
+        "args": [
+          "1-937-555-0100"
+        ],
+        "expected": "9375550100"
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          "555-0100"
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          "2-937-555-0100"
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          "9375550100 ext 4"
+        ],
+        "expected": null
+      }
+    ]
+  },
+  {
+    "id": "discount-cents",
+    "prompt": "Implement discounted_cents(items, percent). Items are dicts with nonnegative integer qty and unit_cents. percent must be an integer from 0 to 100. Return None for invalid inputs. Otherwise return floor(sum(qty*unit_cents)*(100-percent)/100) as integer cents, never using floating point.",
+    "entrypoint": "discounted_cents",
+    "starter": "def discounted_cents(items, percent):\n    return sum(i[\"qty\"] * i[\"unit_cents\"] for i in items) * (100-percent) / 100\n",
+    "visible": [
+      {
+        "args": [
+          [
+            {
+              "qty": 2,
+              "unit_cents": 199
+            }
+          ],
+          50
+        ],
+        "expected": 199
+      },
+      {
+        "args": [
+          [
+            {
+              "qty": 1,
+              "unit_cents": 101
+            }
+          ],
+          10
+        ],
+        "expected": 90
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          [
+            {
+              "qty": 1,
+              "unit_cents": 99
+            }
+          ],
+          0
+        ],
+        "expected": 99
+      },
+      {
+        "args": [
+          [
+            {
+              "qty": -1,
+              "unit_cents": 100
+            }
+          ],
+          10
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          [
+            {
+              "qty": 1,
+              "unit_cents": 100
+            }
+          ],
+          101
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          [],
+          0
+        ],
+        "expected": 0
+      }
+    ]
+  },
+  {
+    "id": "backoff",
+    "prompt": "Implement capped_backoff(attempt, base, cap). For integer attempt >= 1, positive integer base, and cap >= base return min(cap, base * 2**(attempt-1)). Otherwise return None. Handle very large attempts efficiently without computing enormous powers.",
+    "entrypoint": "capped_backoff",
+    "starter": "def capped_backoff(attempt, base, cap):\n    return min(cap, base * (2 ** attempt))\n",
+    "visible": [
+      {
+        "args": [
+          1,
+          2,
+          60
+        ],
+        "expected": 2
+      },
+      {
+        "args": [
+          4,
+          2,
+          60
+        ],
+        "expected": 16
+      }
+    ],
+    "hidden": [
+      {
+        "args": [
+          1000,
+          2,
+          60
+        ],
+        "expected": 60
+      },
+      {
+        "args": [
+          0,
+          2,
+          60
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          2,
+          0,
+          60
+        ],
+        "expected": null
+      },
+      {
+        "args": [
+          1,
+          5,
+          3
+        ],
+        "expected": null
+      }
+    ]
+  }
+]
