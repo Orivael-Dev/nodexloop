@@ -1,0 +1,22 @@
+name: Code Gym v0 checks
+on:
+  pull_request:
+    paths:
+      - 'experiments/code-gym-v0/**'
+      - '.github/workflows/code-gym-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r experiments/code-gym-v0/requirements.txt
+      - run: python experiments/code-gym-v0/run_gym.py --check
+      - run: docker pull python:3.12-alpine
+      - run: python -m unittest discover -s experiments/code-gym-v0/tests -v
