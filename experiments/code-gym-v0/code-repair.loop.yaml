@@ -1,0 +1,64 @@
+# Importable NodeXLoop visual graph companion to the external gym runner.
+# This graph is NOT automatically executed by run_gym.py.
+apiVersion: nodexloop/v1
+kind: LoopGraph
+metadata:
+  name: Short coding task — gym experiment (visual guide)
+spec:
+  nodes:
+    - id: 1
+      type: input
+      name: Task brief
+      description: "Ten synthetic coding prompts; hidden tests remain private"
+      color: gray
+      position: { x: 40, y: 180 }
+      config:
+        prompt: "Implement the named Python function. The benchmark runner provides the exact prompt and starter code."
+    - id: 2
+      type: coder
+      name: Small model candidate
+      description: "Write a complete Python function/module"
+      color: green
+      position: { x: 260, y: 180 }
+      config:
+        temperature: 0
+        maxIterations: 3
+        passContext: true
+        format: markdown
+        systemPrompt: "Return complete Python source only. No external packages."
+    - id: 3
+      type: critic
+      name: Visible-test feedback
+      description: "Compare with deterministic visible cases; hidden cases withheld"
+      color: red
+      position: { x: 480, y: 180 }
+      config:
+        temperature: 0
+        threshold: 1
+        maxIterations: 2
+        passContext: true
+        format: markdown
+        systemPrompt: "Review visible test feedback. Suggest a specific fix. Do not assume or expose hidden tests."
+    - id: 4
+      type: gate
+      name: Retry budget
+      description: "At most two repairs; stop early when visible tests pass"
+      color: white
+      position: { x: 700, y: 180 }
+      config:
+        maxIterations: 2
+        threshold: 1
+    - id: 5
+      type: output
+      name: Trace for experiment runner
+      description: "Independent sandbox hidden-test scoring and exported trajectory"
+      color: green
+      position: { x: 920, y: 180 }
+      config:
+        format: markdown
+  edges:
+    - { from: 1, to: 2, type: normal }
+    - { from: 2, to: 3, type: normal }
+    - { from: 3, to: 4, type: normal }
+    - { from: 4, to: 2, type: loop, label: repair }
+    - { from: 4, to: 5, type: normal, label: finish }
