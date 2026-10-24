@@ -1,0 +1,141 @@
+# NodeXLoop graph manifest — CAS policy-boundary coding exercise.
+# This graph reviews supplied CAS evidence; it does not itself invoke axiom_cas.
+apiVersion: nodexloop/v1
+kind: LoopGraph
+metadata:
+  name: CAS policy-boundary coding exercise (experimental)
+spec:
+  nodes:
+    - id: 1
+      type: input
+      name: CAS case + expected boundary
+      description: A sanitized case with explicit allowed and denied actions
+      color: gray
+      position: { x: 40, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.95
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        prompt: |-
+          Provide a sanitized CAS case and the policy boundary under test:
+          - case identifier and software version/commit
+          - principal, requested action, target resource, and relevant context
+          - expected decision (allow, deny, or require human approval)
+          - reason/evidence required for that decision
+          - test command or CAS harness procedure and its raw output
+
+          Remove credentials, personal data, and production identifiers. Include at least one allowed case and one denied or approval-required near-neighbor so the evaluator must distinguish them.
+    - id: 2
+      type: reader
+      name: Policy + implementation map
+      description: Trace the decision path without changing it
+      color: orange
+      position: { x: 260, y: 100 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.92
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Read the supplied policy, implementation, and case material. Map each requested action to the code path and the relevant allow/deny/approval rule. Cite exact supplied paths, symbols, and rule identifiers. Separate explicit policy from inference. Do not suggest weakening a deny rule to make the positive case pass.
+    - id: 3
+      type: reader
+      name: CAS run evidence
+      description: Record decisions from the external CAS harness
+      color: orange
+      position: { x: 260, y: 340 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.95
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Inspect the attached CAS harness output. For every case, record the input identifier, observed decision, expected decision, exit status, and any receipt or trace identifier actually present. Do not fabricate a receipt or imply the CAS tool ran when only a prompt or source review is attached. Mark missing output NOT RUN.
+    - id: 4
+      type: merge
+      name: Boundary evidence bundle
+      description: Align policy, code path, and observed decisions
+      color: white
+      position: { x: 480, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.94
+        autoTerminate: true
+        passContext: true
+        format: markdown
+    - id: 5
+      type: coder
+      name: Minimal boundary fix
+      description: Correct the smallest confirmed mismatch
+      color: green
+      position: { x: 700, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.94
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          If evidence shows a policy/implementation mismatch, propose the smallest patch that restores the stated boundary. Preserve deny-by-default behavior, human approval requirements, and unrelated policy rules. Return a unified diff and identify the exact cases it should change. If evidence is insufficient or the implementation already matches policy, return NO PATCH with the reason. Never claim CAS was executed unless raw harness output is included.
+    - id: 6
+      type: critic
+      name: CAS boundary adversary
+      description: Probe near-neighbor cases for accidental over-permission
+      color: red
+      position: { x: 940, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 4
+        threshold: 0.96
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        adversary: true
+        systemPrompt: |-
+          Act as a sanctioned adversarial reviewer of the policy boundary. Compare the allowed case with the denied and approval-required near-neighbors. Look for identity confusion, scope expansion, stale authority, missing evidence, bypass paths, and a change that turns an approval requirement into an allow. Use only the supplied policy and CAS run evidence. Score 0.00–1.00 and cite each mismatch. A source-only review is not a CAS execution result. If no harness output is attached, mark the result NOT VERIFIED and require the operator to run the CAS harness.
+    - id: 7
+      type: gate
+      name: Independent approval
+      description: Human reviewer checks policy and CAS evidence
+      color: white
+      position: { x: 1180, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.97
+        autoTerminate: true
+        passContext: true
+        format: markdown
+    - id: 8
+      type: output
+      name: CAS case record
+      description: Decision matrix, patch, run evidence, and approval
+      color: green
+      position: { x: 1400, y: 220 }
+      config:
+        temperature: 0.1
+        maxIterations: 2
+        threshold: 0.94
+        autoTerminate: true
+        passContext: true
+        format: markdown
+  edges:
+    - { from: 1, to: 2, type: normal }
+    - { from: 1, to: 3, type: normal }
+    - { from: 2, to: 4, type: normal }
+    - { from: 3, to: 4, type: normal }
+    - { from: 4, to: 5, type: normal }
+    - { from: 5, to: 6, type: normal }
+    - { from: 6, to: 5, type: loop, label: fix a proven mismatch }
+    - { from: 6, to: 7, type: normal, label: boundary holds with CAS evidence }
+    - { from: 7, to: 5, type: loop, label: reviewer requests rework }
+    - { from: 7, to: 8, type: normal, label: approved }
