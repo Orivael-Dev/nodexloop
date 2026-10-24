@@ -57,6 +57,20 @@ All ten tasks with three repetitions (default):
 
 Reports are saved to ignored \`results/gym-<UTC>.json\`: raw candidate outputs, visible + hidden case counts, per-attempt feedback, model IDs, latency, and token usage when providers report it. Summaries include first-pass rate, final hidden pass rate, and mean fraction of hidden tests passed. Results are **not** automatic model-training examples until reviewed, deduplicated and checked for data leakage. Do not commit production customer code or credentials to fixtures/results.
 
+## Timeouts, pacing, and resuming interrupted runs
+
+The optional \`transport\` section in \`experiment.gym.yaml\` defaults to a 300-second HTTP read timeout, a 2-second gap between model requests, and two retries on transient timeouts, dropped connections, HTTP 429, and server-side 5xx/408/425 responses. Backoff is exponential and capped. HTTP 401/403/404 and other permanent errors fail immediately. A timed-out generation may still have consumed tokens on the server, even when the provider returns no usage data.
+
+Results are checkpointed to ignored \`results/gym-progress.json\` **after each completed task/repetition**. For example, if the tenth task times out but nine tasks finished, retry exactly that interrupted run:
+
+    python experiments/code-gym-v0/run_gym.py --limit 10 --repeats 1 --resume
+
+A checkpoint is only reusable if the tasks, manifest, model IDs/endpoints and experiment arguments match. To run just a previously failed final task when your earlier run did not create checkpoints:
+
+    python experiments/code-gym-v0/run_gym.py --start-at backoff --limit 1 --repeats 1
+
+That single-task run is a **new result**, not a reconstruction of missing prior results. The old complete JSON results (if present) remain untouched. For higher delay/timeout adjust the YAML transport section. Changing YAML after a partial run will intentionally invalidate \`--resume\`; finish or back up the checkpoint first.
+
 ## Safety and limitations
 
 - Candidate Python is executed **only inside ephemeral Docker containers**: network disabled, read-only root, dropped capabilities, no-new-privileges, non-root UID, CPU/memory/PID limits, Python CPU limit, and a subprocess timeout. The Docker daemon itself must be trusted; use a disposable isolated host for untrusted models.
