@@ -21,6 +21,13 @@ models:
     base_url_env: LARGE_BASE_URL
     api_key_env: LARGE_API_KEY
     model_env: LARGE_MODEL
+# Higher timeout for thinking models; pauses apply across both endpoints.
+transport:
+  request_timeout_seconds: 300
+  max_retries: 2
+  pause_between_calls_seconds: 2
+  retry_backoff_seconds: 5
+  max_backoff_seconds: 60
 sandbox:
   image: python:3.12-alpine
   timeout_seconds: 12

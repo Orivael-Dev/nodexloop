@@ -3,6 +3,8 @@
 import argparse
 import ast
 import datetime as dt
+import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
@@ -84,8 +86,21 @@ def endpoint(settings):
     url = base if base.endswith("/chat/completions") else base + "/chat/completions"
     return url, model, key
 
-def chat(settings, messages, max_tokens=900):
+_LAST_REQUEST_FINISHED = None
+TRANSIENT_HTTP_CODES = {408, 425, 429, 500, 502, 503, 504}
+
+def chat(settings, messages, max_tokens=900, transport=None):
+    """OpenAI-compatible chat with bounded retry/backoff on transient failures."""
+    global _LAST_REQUEST_FINISHED
     url, model, key = endpoint(settings)
+    transport = transport or {}
+    timeout = float(transport.get("request_timeout_seconds", 300))
+    retries = int(transport.get("max_retries", 2))
+    pause = float(transport.get("pause_between_calls_seconds", 2))
+    backoff = float(transport.get("retry_backoff_seconds", 5))
+    max_backoff = float(transport.get("max_backoff_seconds", 60))
+    if timeout <= 0 or retries < 0 or pause < 0 or backoff < 0 or max_backoff < 0:
+        raise ValueError("Invalid transport timeout, pause or retry settings")
     payload = json.dumps({
         "model": model,
         "messages": messages,
@@ -96,22 +111,59 @@ def chat(settings, messages, max_tokens=900):
     headers = {"Content-Type": "application/json"}
     if key:
         headers["Authorization"] = "Bearer " + key
-    start = time.monotonic()
-    try:
-        with urllib.request.urlopen(
-            urllib.request.Request(url, data=payload, headers=headers, method="POST"),
-            timeout=120,
-        ) as response:
-            data = json.load(response)
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError("Model HTTP failure (status %s) for %s" % (exc.code, model)) from None
-    elapsed = time.monotonic() - start
-    message = data["choices"][0]["message"]["content"]
-    if isinstance(message, list):
-        message = "\n".join(x.get("text", "") for x in message if isinstance(x, dict))
-    usage = data.get("usage") or {}
-    return {"text": str(message or ""), "seconds": round(elapsed, 3),
-            "total_tokens": usage.get("total_tokens"), "model": model}
+    started = time.monotonic()
+    for attempt in range(retries + 1):
+        if _LAST_REQUEST_FINISHED is not None:
+            remaining = pause - (time.monotonic() - _LAST_REQUEST_FINISHED)
+            if remaining > 0:
+                time.sleep(remaining)
+        retry_after = 0.0
+        try:
+            with urllib.request.urlopen(
+                urllib.request.Request(url, data=payload, headers=headers, method="POST"),
+                timeout=timeout,
+            ) as response:
+                data = json.load(response)
+            message = data["choices"][0]["message"]["content"]
+            if isinstance(message, list):
+                message = "\n".join(x.get("text", "") for x in message if isinstance(x, dict))
+            usage = data.get("usage") or {}
+            return {
+                "text": str(message or ""),
+                "seconds": round(time.monotonic() - started, 3),
+                "total_tokens": usage.get("total_tokens"),
+                "model": model,
+                "request_attempts": attempt + 1,
+            }
+        except urllib.error.HTTPError as exc:
+            if exc.code not in TRANSIENT_HTTP_CODES:
+                raise RuntimeError(
+                    "Model %s HTTP %s (non-retryable; check model, key, endpoint)" % (model, exc.code)
+                ) from None
+            reason = "HTTP " + str(exc.code)
+            raw_retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
+            try:
+                retry_after = min(max_backoff, max(0.0, float(raw_retry_after)))
+            except ValueError:
+                retry_after = 0.0
+        except (TimeoutError, urllib.error.URLError, ConnectionError,
+                http.client.IncompleteRead) as exc:
+            reason = type(exc).__name__
+        finally:
+            _LAST_REQUEST_FINISHED = time.monotonic()
+        if attempt == retries:
+            raise RuntimeError(
+                "Model %s failed after %d request(s): %s. Partial progress is in gym-progress.json."
+                % (model, attempt + 1, reason)
+            ) from None
+        wait = max(retry_after, min(max_backoff, backoff * (2 ** attempt)))
+        print(
+            "Transient %s from model %s; retry %d/%d in %.1fs"
+            % (reason, model, attempt + 1, retries, wait), flush=True,
+        )
+        time.sleep(wait)
+    raise AssertionError("Unreachable")
+
 
 def grade(source, task, tests, sandbox):
     """Never run candidate code in the host process."""
@@ -168,6 +220,7 @@ def run_condition(condition, task, config, initial):
     sandbox = config["sandbox"]
     small = config["models"]["small"]
     large = config["models"]["large"]
+    transport = config.get("transport", {})
     max_repairs = config["experiment"]["max_repairs"] if condition in ("small_gym", "small_teacher") else 0
     response = initial
     attempts = []
@@ -183,7 +236,7 @@ def run_condition(condition, task, config, initial):
             break
         hint = ""
         if condition == "small_teacher":
-            critique = chat(large, coach_messages(task, code, visible), max_tokens=280)
+            critique = chat(large, coach_messages(task, code, visible), max_tokens=280, transport=transport)
             calls.append(critique)
             hint = "\nTeacher diagnosis:\n" + critique["text"]
         retry_messages = task_messages(task) + [
@@ -192,7 +245,7 @@ def run_condition(condition, task, config, initial):
              "\n".join(visible["feedback"]) + hint +
              "\nRepair your solution. Return complete Python source only."},
         ]
-        response = chat(small, retry_messages)
+        response = chat(small, retry_messages, transport=transport)
         calls.append(response)
     counts = [x["total_tokens"] for x in calls if isinstance(x["total_tokens"], (int, float))]
     return {
@@ -203,6 +256,7 @@ def run_condition(condition, task, config, initial):
         "final_hidden_passed": attempts[-1]["hidden"]["passed"] == attempts[-1]["hidden"]["total"],
         "hidden_fraction": attempts[-1]["hidden"]["passed"] / attempts[-1]["hidden"]["total"],
         "model_calls": len(calls),
+        "request_retries": sum(call.get("request_attempts", 1) - 1 for call in calls),
         "model_seconds": round(sum(x["seconds"] for x in calls), 3),
         "grader_seconds": round(sum(y[z]["seconds"] for y in attempts for z in ("visible", "hidden")), 3),
         "total_tokens": sum(counts) if len(counts) == len(calls) else None,
@@ -226,6 +280,46 @@ def summary(rows):
         }
     return output
 
+def run_signature(config, tasks, reps):
+    """Hash inputs and model identities, never API keys, to reject unsafe resumes."""
+    models = {
+        name: {
+            "url": os.getenv(spec["base_url_env"], ""),
+            "model": os.getenv(spec["model_env"], ""),
+        }
+        for name, spec in config["models"].items()
+    }
+    descriptor = {"runner": 2, "config": config, "tasks": tasks, "reps": reps,
+                  "models": models}
+    return hashlib.sha256(
+        json.dumps(descriptor, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+def save_progress(path, signature, rows):
+    """Durable atomic checkpoint of completed tasks; write after each repetition."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    contents = {
+        "schema": "nodexloop.gym.progress/v1",
+        "run_signature": signature,
+        "completed_episodes": len(rows),
+        "summary": summary(rows),
+        "episodes": rows,
+    }
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(contents, indent=2) + "\n", encoding="utf-8")
+    temp.replace(path)
+
+def load_progress(path, signature):
+    if not path.exists():
+        raise ValueError("No checkpoint found: " + str(path))
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("run_signature") != signature:
+        raise ValueError("Checkpoint inputs/models do not match; start a new run without --resume")
+    rows = data["episodes"]
+    if len({(r["task"], r["repetition"], r["condition"]) for r in rows}) != len(rows):
+        raise ValueError("Checkpoint contains duplicate episodes")
+    return rows
+
 def main():
     parser = argparse.ArgumentParser(description="NodeXLoop short-code training-gym discovery benchmark")
     parser.add_argument("--config", type=Path, default=ROOT / "experiment.gym.yaml")
@@ -234,6 +328,8 @@ def main():
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--repeats", type=int)
     parser.add_argument("--check", action="store_true", help="Validate files; do not call models or run code")
+    parser.add_argument("--resume", action="store_true", help="Resume tasks completed in gym-progress.json")
+    parser.add_argument("--start-at", type=str, help="Start at a named task ID, e.g. backoff")
     args = parser.parse_args()
     config, tasks = load_input(args.config, args.cases)
     if args.check:
@@ -250,19 +346,33 @@ def main():
     reps = args.repeats if args.repeats is not None else config["experiment"]["repetitions"]
     if reps < 1 or args.limit < 1:
         raise ValueError("Repetitions and task limit must be positive")
-    rows = []
-    for task in tasks[:args.limit]:
+    if args.start_at:
+        task_ids = [task["id"] for task in tasks]
+        if args.start_at not in task_ids:
+            raise ValueError("Unknown task ID for --start-at: " + args.start_at)
+        tasks = tasks[task_ids.index(args.start_at):]
+    selected_tasks = tasks[:args.limit]
+    signature = run_signature(config, selected_tasks, reps)
+    progress = args.output_dir / "gym-progress.json"
+    rows = load_progress(progress, signature) if args.resume else []
+    completed = {(r["task"], r["repetition"], r["condition"]) for r in rows}
+    conditions = ("small_direct", "large_direct", "small_gym", "small_teacher")
+    for task in selected_tasks:
         for repetition in range(1, reps + 1):
+            if all((task["id"], repetition, c) in completed for c in conditions):
+                print("Resumed: skipping completed %s, repetition %s" % (task["id"], repetition), flush=True)
+                continue
             # Sharing the first small-model response removes first-attempt variation
             # from comparisons between baseline, gym feedback and teacher feedback.
-            initial_small = chat(config["models"]["small"], task_messages(task))
-            initial_large = chat(config["models"]["large"], task_messages(task))
+            initial_small = chat(config["models"]["small"], task_messages(task), transport=config.get("transport", {}))
+            initial_large = chat(config["models"]["large"], task_messages(task), transport=config.get("transport", {}))
             for condition in ("small_direct", "large_direct", "small_gym", "small_teacher"):
                 first = initial_large if condition == "large_direct" else initial_small
                 result = run_condition(condition, task, config, first)
                 result.update({"task": task["id"], "repetition": repetition})
                 rows.append(result)
-            print("Completed %s, repetition %s" % (task["id"], repetition), flush=True)
+            save_progress(progress, signature, rows)
+            print("Completed %s, repetition %s (checkpoint saved)" % (task["id"], repetition), flush=True)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = args.output_dir / ("gym-" + timestamp + ".json")
@@ -275,6 +385,8 @@ def main():
         "episodes": rows,
     }
     output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    # Keep the completed checkpoint for audit or to resume an interrupted final write.
+    save_progress(progress, signature, rows)
     print(json.dumps(report["summary"], indent=2))
     print("Saved " + str(output))
 
