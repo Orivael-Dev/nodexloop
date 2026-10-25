@@ -96,10 +96,11 @@ def run_tests(workspace, command, timeout=25, image=DOCKER_IMAGE):
         return {"passed": False, "exit_code": None, "output": "TIMEOUT in Docker test sandbox"}
 
 
-def make_patch(path, before, after):
+def make_patch(path, before, after, mode="debug"):
     return "".join(difflib.unified_diff(
         before.splitlines(keepends=True), after.splitlines(keepends=True),
-        fromfile="a/" + str(path), tofile="b/" + str(path),
+        fromfile="/dev/null" if mode == "create" else "a/" + str(path),
+        tofile="b/" + str(path),
     ))
 
 
@@ -186,7 +187,7 @@ def episode(config, repo, file, task_description, mode, test_command, output_dir
             except SyntaxError as exc:
                 tests = {"passed": False, "exit_code": None,
                          "output": f"SYNTAX ERROR: line {exc.lineno}, {exc.msg}"}
-            patch = make_patch(target, before, code)
+            patch = make_patch(target, before, code, mode=mode)
             critique = gym.chat(
                 critic_settings,
                 make_critic_messages(task, target, before, code, patch, tests),
