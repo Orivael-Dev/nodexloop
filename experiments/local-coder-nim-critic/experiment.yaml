@@ -1,0 +1,22 @@
+# Companion executable role mapping. Never store API keys here.
+apiVersion: nodexloop.training/v1alpha1
+kind: LocalCoderNimCritic
+metadata:
+  name: github-script-debug-and-create
+models:
+  local_coder:
+    base_url_env: SMALL_BASE_URL
+    api_key_env: SMALL_API_KEY
+    model_env: SMALL_MODEL
+  nim_critic:
+    base_url_env: LARGE_BASE_URL
+    api_key_env: LARGE_API_KEY
+    model_env: LARGE_MODEL
+experiment:
+  max_rounds: 3
+transport:
+  request_timeout_seconds: 300
+  max_retries: 2
+  pause_between_calls_seconds: 2
+  retry_backoff_seconds: 5
+  max_backoff_seconds: 60
