@@ -80,10 +80,18 @@ def run_tests(workspace, command, timeout=25, image=DOCKER_IMAGE):
     # Running subprocess via shell is intentionally not supported.
     if len(argv) < 3 or argv[:3] != ["python", "-m", "unittest"]:
         raise ValueError("v0 supports only python -m unittest ... test commands")
+    # Preserve owner-only 0700 workspace permissions on Linux by matching its UID.
+    # Never execute untrusted code as root inside Docker.
+    if hasattr(os, "getuid"):
+        if os.getuid() == 0:
+            raise ValueError("Run the gym as a non-root host user")
+        docker_user = f"{os.getuid()}:{os.getgid()}"
+    else:
+        docker_user = "65534:65534"  # Docker Desktop / native Windows
     cmd = ["docker", "run", "--rm", "--pull=never", "--network=none",
            "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges",
            "--pids-limit=64", "--memory=512m", "--cpus=1",
-           "--user=65534:65534", "--workdir=/workspace",
+           f"--user={docker_user}", "--workdir=/workspace",
            "--tmpfs", "/tmp:rw,nosuid,nodev,size=32m",
            "-e", "PYTHONDONTWRITEBYTECODE=1",
            "--mount", f"type=bind,src={workspace},dst=/workspace,readonly",
