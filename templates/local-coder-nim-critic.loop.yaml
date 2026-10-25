@@ -1,0 +1,155 @@
+# NodeXLoop v1 importable graph; select models in the UI for coder/critic.
+# Runnable Git sandbox experiment lives in experiments/local-coder-nim-critic.
+apiVersion: nodexloop/v1
+kind: LoopGraph
+metadata:
+  name: Local coder + NIM critic (script creation or Git debugging)
+spec:
+  nodes:
+    - id: 1
+      type: input
+      name: Create or debug task
+      description: "Choose CREATE or DEBUG; specify target and acceptance command"
+      color: gray
+      position: { x: 40, y: 200 }
+      config:
+        temperature: 0.1
+        maxIterations: 1
+        passContext: true
+        format: markdown
+        prompt: |-
+          MODE: CREATE or DEBUG
+          TASK: Exact feature or bug and observable expected behavior
+          REPOSITORY: Path, exact commit hash, and clean/dirty status
+          FILES: Explicit files authorized to be read or modified
+          ACCEPTANCE: Command, expected output, and baseline result
+          CONSTRAINTS: Public API, tests, disallowed changes
+
+          Start in a disposable clone or isolated workspace. Supply the actual
+          files and test output, not descriptions of what they might contain.
+          Keep secrets, credentials, private customer data, and production
+          code out of third-party-model context unless explicitly authorized.
+    - id: 2
+      type: reader
+      name: Repository evidence
+      description: "Grounded source paths, contracts, and current behavior"
+      color: orange
+      position: { x: 260, y: 80 }
+      config:
+        temperature: 0.1
+        maxIterations: 1
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Read only supplied files and test artifacts. Enumerate exact symbols,
+          imported dependencies, called functions, and surrounding contracts.
+          For CREATE identify the interface and placement of the new file.
+          For DEBUG identify the failing path and test assertion.
+          Do not invent repository facts or claim a Git checkout was inspected
+          if no source was attached.
+    - id: 3
+      type: reader
+      name: Baseline evidence
+      description: "Capture baseline failures and the exact test command"
+      color: orange
+      position: { x: 260, y: 320 }
+      config:
+        temperature: 0.1
+        maxIterations: 1
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          Record the exact baseline test command, exit code, failures,
+          environment, and original commit. Mark absent output NOT RUN.
+          Do not change expected results or weaken tests.
+    - id: 4
+      type: merge
+      name: Bounded task context
+      description: "Only sourced, approved code and baseline evidence"
+      color: white
+      position: { x: 490, y: 200 }
+      config:
+        temperature: 0.1
+        passContext: true
+        format: markdown
+    - id: 5
+      type: coder
+      name: Local coding model
+      description: "Assign local Ollama / llama-server model in inspector"
+      color: green
+      position: { x: 720, y: 200 }
+      config:
+        temperature: 0
+        maxIterations: 3
+        threshold: 0.90
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          You are the LOCAL CODER, not the final judge. CREATE: write the
+          requested new script; DEBUG: provide the smallest code patch that
+          fixes the observed behavior. Keep existing contracts intact.
+          Return complete proposed file contents or a unified diff, with
+          changed paths named precisely. Never change test expectations,
+          silently disable checks, invent a test pass, or read other files.
+          When given NIM critique plus REAL sandbox test output, fix only
+          verified issues. Treat advice as a hypothesis, not authority.
+    - id: 6
+      type: critic
+      name: NVIDIA NIM code critic
+      description: "Assign NIM endpoint/model in inspector; review patch only"
+      color: red
+      position: { x: 960, y: 200 }
+      config:
+        temperature: 0.1
+        maxIterations: 3
+        threshold: 0.95
+        autoTerminate: true
+        passContext: true
+        format: markdown
+        systemPrompt: |-
+          You are the NIM CRITIC. Do NOT replace the coder, invent files, or
+          claim you executed tests. Review the original requirements, allowed
+          source, proposed patch, and independent test evidence, if supplied.
+          Prioritize correctness, edge cases, regressions, and minimal diff.
+          Identify precise file/line/symbol evidence for every finding.
+          If tests were not actually executed, mark TESTS NOT RUN.
+          Output:
+          VERDICT: APPROVE or REQUEST_CHANGES
+          FINDINGS: numbered concrete issues, or NONE
+          NEXT_CHANGE: one short actionable instruction (or NONE)
+          TEST_STATUS: observed pass/fail/not run
+          A passing model review is never a substitute for passing tests.
+    - id: 7
+      type: gate
+      name: Tests + critic + human gate
+      description: "Approve only with independent tests and human review"
+      color: white
+      position: { x: 1200, y: 200 }
+      config:
+        temperature: 0.1
+        maxIterations: 3
+        threshold: 0.95
+        autoTerminate: true
+        passContext: true
+        format: markdown
+    - id: 8
+      type: output
+      name: Proposed patch and evidence
+      description: "Diff, tests, NIM review, unresolved issues"
+      color: green
+      position: { x: 1450, y: 200 }
+      config:
+        temperature: 0.1
+        passContext: true
+        format: markdown
+  edges:
+    - { from: 1, to: 2, type: normal }
+    - { from: 1, to: 3, type: normal }
+    - { from: 2, to: 4, type: normal }
+    - { from: 3, to: 4, type: normal }
+    - { from: 4, to: 5, type: normal }
+    - { from: 5, to: 6, type: normal }
+    - { from: 6, to: 7, type: normal }
+    - { from: 7, to: 5, type: loop, label: test or review failure }
+    - { from: 7, to: 8, type: normal, label: evidence reviewed }
