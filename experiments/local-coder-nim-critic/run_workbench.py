@@ -175,7 +175,7 @@ def episode(config, repo, file, task_description, mode, test_command, output_dir
         task = {"mode": mode, "description": task_description}
         for index in range(1, max_rounds + 1):
             candidate = gym.chat(local_settings,
-                                 make_coder_messages(task, target, before, "", previous),
+                                 make_coder_messages(task, target, before, "BASELINE TEST EVIDENCE:\n" + original_tests["output"], previous),
                                  max_tokens=2600, transport=transport)
             code = gym.extract_code(candidate["text"]).strip() + "\n"
             if len(code) > MAX_PROMPT_FILE:
@@ -191,7 +191,7 @@ def episode(config, repo, file, task_description, mode, test_command, output_dir
             critique = gym.chat(
                 critic_settings,
                 make_critic_messages(task, target, before, code, patch, tests),
-                max_tokens=650, transport=transport,
+                max_tokens=1800, transport=transport,
             )
             decision = verdict(critique["text"])
             item = {"round": index, "code": code, "diff": patch,
