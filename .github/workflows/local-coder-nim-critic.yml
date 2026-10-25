@@ -1,0 +1,39 @@
+name: Local coder + NIM critic checks
+on:
+  pull_request:
+    paths:
+      - 'templates/local-coder-nim-critic.loop.yaml'
+      - 'experiments/local-coder-nim-critic/**'
+      - '.github/workflows/local-coder-nim-critic.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependencies
+        run: python -m pip install -r experiments/code-gym-v0/requirements.txt
+      - name: Parse importable graph and role config
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          graph = yaml.safe_load(Path("templates/local-coder-nim-critic.loop.yaml").read_text())
+          roles = yaml.safe_load(Path("experiments/local-coder-nim-critic/experiment.yaml").read_text())
+          assert graph["apiVersion"] == "nodexloop/v1"
+          assert graph["kind"] == "LoopGraph"
+          nodes = graph["spec"]["nodes"]
+          assert {"coder", "critic", "gate"}.issubset({n["type"] for n in nodes})
+          assert roles["models"]["local_coder"]["model_env"] == "SMALL_MODEL"
+          assert roles["models"]["nim_critic"]["model_env"] == "LARGE_MODEL"
+          print("Parsed graph and role mapping")
+          PY
+      - run: docker pull python:3.12-alpine
+      - name: Unit and Docker tests
+        run: python -m unittest discover -s experiments/local-coder-nim-critic/tests -v
