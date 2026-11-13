@@ -105,8 +105,8 @@ All four are off until you turn them on, and all four go through the guard.
 
 ### The night shift *(4.3)*
 For the hours nobody is watching. These run beside the app as small Node 18+
-daemons with no npm install. They ship to design partners and are **not
-published on this repo yet**; open an issue if you want them.
+daemons with no npm install. They are not part of the extension download
+and are **not published on this repo yet**; open an issue if you want them.
 
 - **Triggers** — start governed loops on a cron schedule or from an n8n /
   Zapier event. A schedule runs live only inside a **mandate**: limits a named
