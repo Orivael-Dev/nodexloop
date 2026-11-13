@@ -22,8 +22,17 @@ loop governor stops it instead of letting it burn model calls.
 
 ### The canvas and the debugger
 - **Visual agent-loop canvas** — agent → tool → critic → retry → gate → code
-  change → test → approve, with ten node types, drag-and-drop wiring, undo,
-  and graph import/export.
+  change → test → approve, with fifteen node types (agents, critics, gates,
+  loops and merges, plus Run, Search, MCP Tool, Module and Swarm),
+  drag-and-drop wiring, undo, and graph import/export.
+- **Loop Architect** *(4.3)* — describe the loop you want in a sentence and a
+  checked draft lands on the canvas, runs in sim, and comes back as the nodes
+  talking. The guard reads your words before the model does. A draft is held
+  to nine plain node types (no Run, MCP, Search, Swarm or Module), one input,
+  at least one output, and cycles only through a critic loop of at most ten
+  iterations; a draft that fails is sent back once, then replaced by the
+  closest template. It is an ordinary edit, so Undo restores the canvas. With
+  no model configured it matches templates offline and spends nothing.
 - **Breakpoints and stepping** — F9 on a node, execution pauses *before* it
   runs so you can read exactly what it was about to send; step, continue,
   stop from the debug bar.
@@ -45,6 +54,13 @@ loop governor stops it instead of letting it burn model calls.
 - **Per-node runtime permissions** — recorded and audited on every run
   (enforcement is on the roadmap and the README says so rather than implying
   more).
+- **Agent fleet kill switch** *(4.3)* — *NodeXLoop: Set Agent Fleet Level*
+  applies one ladder to every agent run in the workspace. L2 THROTTLE sends
+  model calls one at a time and asks before a run node or swarm; L3 SUSPEND
+  refuses new ones; L4 TERMINATE aborts every in-flight model call and kills
+  every swarm and run node together with everything it started, within
+  250 ms. Raising needs no key; lowering is a signed release, and a release
+  that doesn't verify reads as L3. Every change is a hash-chained receipt.
 
 ### Module Resolver — governed capability loading *(3.7)*
 - **"This loop needs pygame"** becomes a governed workflow: resolve on PyPI,
@@ -58,6 +74,62 @@ loop governor stops it instead of letting it burn model calls.
 - **Module node on the canvas** *(3.7.1)* — drag it from the Capabilities
   palette, name a package, Resolve & install runs the governed flow, and at
   run time the node injects the API context downstream for zero tokens.
+
+### Connect it to your tools *(3.9 – 4.2)*
+All four are off until you turn them on, and all four go through the guard.
+
+- **Search node** *(3.9)* — loops can search the web through your own SearXNG
+  instance (no key), Brave or Tavily (key in the OS keychain, never in the
+  graph). Results go downstream marked untrusted. The query is checked before
+  it leaves and the results before a model reads them; sim runs and the
+  browser build never send a query.
+- **MCP Tool node** *(4.2)* — call any tool on any server in your workspace's
+  `.mcp.json` (the file Claude Code reads) as a graph step. Arguments are
+  guarded before they leave and results before a model reads them; a tool
+  that doesn't declare itself read-only asks in a VS Code modal before every
+  call. Credentials stay in the OS keychain or environment and never reach the
+  webview. stdio and Streamable HTTP; trusted workspaces only; sim runs never
+  start a server.
+- **Webhooks for n8n, Zapier and Make** *(4.2)* — `run.started`,
+  `run.finished`, `guard.blocked`, `loop.stalled`, `submission.released` and
+  *(4.3)* `dependency.down` / `dependency.recovered`, HMAC-SHA256-signed when
+  you set a secret. A Slack incoming-webhook URL is recognised and sent a short
+  Slack message instead of the JSON envelope. `guard.blocked` carries a hash of
+  the input, never the blocked text.
+- **Autopilot** *(4.2)* — proposes repairs for failed, stalled or
+  below-threshold runs from debugging templates you register, only inside
+  hourly repair and token budgets, a same-failure cooldown, and a circuit
+  breaker that waits for a human after three weak repairs. Repairs are
+  simulated, so Autopilot cannot trigger itself; healthy runs are never
+  touched.
+
+### The night shift *(4.3)*
+For the hours nobody is watching. These run beside the app as small Node 18+
+daemons with no npm install. They ship to design partners and are **not
+published on this repo yet**; open an issue if you want them.
+
+- **Triggers** — start governed loops on a cron schedule or from an n8n /
+  Zapier event. A schedule runs live only inside a **mandate**: limits a named
+  person signed in advance, bound to the exact loop bytes, endpoint, model,
+  run and dollar caps, per-run time limit, and an expiry of at most 90 days.
+  An inbound event **never** runs live: it is authenticated, replay-windowed,
+  de-duplicated and guarded, then run offline and queued for a person. Every
+  decision is sealed into a chained ledger before the run it decides.
+- **SilenceWatch** — turns silence into an alert: a job that stopped beating,
+  a job that failed, a third-party API that went down or quietly degraded.
+  One alert per incident with spaced reminders, a daily canary that proves the
+  alert path works, and Slack, email (STARTTLS required) or a signed webhook.
+  Alerts carry a host and an error class, never a path, header or body. A
+  watcher on the machine it watches dies with it, and the docs say so.
+- **The morning brief** — what ran overnight, what is waiting (with the exact
+  command to approve each), what failed or was held, and the reported spend,
+  delivered to Slack, email or a signed webhook. A quiet night says so, and a
+  brief that doesn't arrive is itself an alert.
+- **Night-shift pack** — five loops that leave drafts for a person: support
+  replies, an inbox digest, invoice reminders, a weekly KPI brief, and replies
+  to new leads. **Nothing is ever sent**: every loop ends at an output for
+  review, every agent is bounded (steps, tokens, wall time) with no tools and
+  no network, and critics check every figure against the input.
 
 ### Models
 - **Model registry** — OpenAI, Anthropic, Google, OpenRouter, a local
@@ -80,9 +152,21 @@ loop governor stops it instead of letting it burn model calls.
   extracted so a run executes on content, not metadata.
 
 ### Templates
-- **37 built-in templates** across six groups — build, debug your company,
-  debug your life, enterprise, debug the agent, govern the agent — three
-  starred by default for a first run.
+- **51 built-in templates** across nine groups — build and ship, debug your
+  company, debug your life, enterprise operations, debug the agent, govern
+  the agent, bootstrapped startup, established SMB & enterprise, and
+  outcome-based coding — three starred by default for a first run.
+- **Outcome-based coding** *(4.0)* — seven loops for small and mid-sized
+  businesses that start from a result the business can name, write down
+  their definition of done before anything is built, grade against that
+  definition rather than the volume of code, and end at an owner gate:
+  outcome to shipped feature, spreadsheet to internal tool, SaaS-to-SaaS
+  integration, busywork automation, the owner's numbers report,
+  behaviour-preserving modernization, and a release go-live gate.
+- **Startup and scale-up groups** *(4.1)* — MVP scope, pricing and packaging,
+  first-customer outreach; vendor evaluation, OKR cascades, role onboarding.
+  Plus an **evidence-cited prospect finder** whose fit criteria are fixed
+  before any search, so the test can't bend toward what was found.
 - **Repeat-shape suggestion** — run the same loop shape three times and
   NodeXLoop offers to save it as a template or submit it to your org.
 
@@ -140,6 +224,16 @@ that gets shared is key-free, and the server refuses a payload carrying one.
   claiming nothing more than that.
 - **Fleet governance sandbox** — a 1–12 robot dispatch/charging sandbox for
   exercising authority gates against a moving system.
+- **Real robot simulators on the Fleet map** *(4.1)* — add one from a Hugging
+  Face Space and it is pinned to a commit, hash-verified file by file, built
+  only after you confirm the exact commands, and run in its own panel behind a
+  CSP that denies the network. A running sim appears as a live robot, and the
+  same escalation ladder applies to it (L2 slows it, L3 holds it, L4 closes
+  it). Every import, build and level change is a sealed receipt. *(4.3)* adds
+  bounded mission commands (`go_to`, `stop`, `push`, `get_state`) and a
+  research harness for testing whether a checker's feedback helps a local
+  model steer the sim; on its frozen evaluation set the supervisor tied plain
+  retries, 24 of 40 each, and the write-up records that as *not shown*.
 - **A Get-started tab** — three steps to a first run and the handful of
   things the canvas doesn't make obvious.
 
@@ -169,8 +263,10 @@ judges, and a straight-talk page on current limits.
 **[NODEXLOOP_TEMPLATE_DEMOS.pdf](NODEXLOOP_TEMPLATE_DEMOS.pdf)** — a demo
 of every built-in template: all 35 at the time it was generated, across six
 groups (build · debug your company · debug your life · enterprise · debug the
-agent · govern the agent). 3.6.0 ships **37** — the two community templates
-above were promoted after the book was last regenerated.
+agent · govern the agent). 4.3 ships **51**: the 16 added since — the two
+community templates below, the seven outcome-based coding loops, the six
+startup and scale-up templates, and the prospect finder — are not in the book
+yet.
 
 Nothing in it is typed in. Each page shows the template's real graph drawn
 from its canvas coordinates, a full offline run trace, and a
